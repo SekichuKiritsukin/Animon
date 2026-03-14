@@ -448,37 +448,60 @@ class Player {
     this.gridSize = 8; // 1マスのサイズを16に変更
     this.radius = 6;    // マスが小さくなったので、円も少し小さく（12→6）
     this.speed = 2;     // 16は2で割り切れるのでOK
-    
+    this.moveCooldown = 0;
     this.isMoving = false;
     this.targetX = this.x;
     this.targetY = this.y;
   }
 
-  update(stick, mapData) {
-    if (this.isMoving) {
-      if (this.x < this.targetX) this.x += this.speed;
-      if (this.x > this.targetX) this.x -= this.speed;
-      if (this.y < this.targetY) this.y += this.speed;
-      if (this.y > this.targetY) this.y -= this.speed;
+  update(stick, mapData){
 
-      if (this.x === this.targetX && this.y === this.targetY) {
-        this.isMoving = false;
-      }
-      return;
-    }
+// 移動中
+if(this.isMoving){
 
-    if (stick.dx !== 0 || stick.dy !== 0) {
-      const nextTargetX = this.x + stick.dx * this.gridSize;
-      const nextTargetY = this.y + stick.dy * this.gridSize;
+  const dx = this.targetX - this.x;
+  const dy = this.targetY - this.y;
 
-      if (this.canMove(nextTargetX, nextTargetY, mapData)) {
-        this.targetX = nextTargetX;
-        this.targetY = nextTargetY;
-        this.isMoving = true;
-      }
-    }
+  if(Math.abs(dx) <= this.speed && Math.abs(dy) <= this.speed){
+    this.x = this.targetX;
+    this.y = this.targetY;
+    this.isMoving = false;
+  }else{
+    this.x += Math.sign(dx) * this.speed;
+    this.y += Math.sign(dy) * this.speed;
   }
 
+  return;
+}
+
+// 新しい移動開始
+let nx = this.x;
+let ny = this.y;
+
+if(stick.dy === -1){
+  ny -= this.gridSize;
+}
+else if(stick.dy === 1){
+  ny += this.gridSize;
+}
+else if(stick.dx === -1){
+  nx -= this.gridSize;
+}
+else if(stick.dx === 1){
+  nx += this.gridSize;
+}
+
+if(nx !== this.x || ny !== this.y){
+
+  if(this.canMove(nx,ny,mapData)){
+    this.targetX = nx;
+    this.targetY = ny;
+    this.isMoving = true;
+  }
+
+}
+
+}
   canMove(tx, ty, mapData) {
   if (!mapData) return true;
 
@@ -630,6 +653,15 @@ window.addEventListener("keyup", () => { this.dx = 0; this.dy = 0; });
 
 
 <script>
+const keys = {};
+
+document.addEventListener("keydown",(e)=>{
+  keys[e.key] = true;
+});
+
+document.addEventListener("keyup",(e)=>{
+  keys[e.key] = false;
+});
 const game=new Game();
 
 canvas.addEventListener("touchend",(e)=>{
