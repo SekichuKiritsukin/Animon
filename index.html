@@ -315,6 +315,7 @@ async loadLDtk(url) {
 
   update(){
 
+  this.stick.update();   // ←追加
   this.player.update(this.stick, this.mapData);
 
   const dx = this.player.x - this.enemy.x;
@@ -576,13 +577,7 @@ class Stick {
     this.btns = []; // ボタンの情報を入れる
     this.setupButtons();
 // Stickクラスのconstructorに追加
-window.addEventListener("keydown", e => {
-  if(e.key === "ArrowUp") this.dy = -1;
-  if(e.key === "ArrowDown") this.dy = 1;
-  if(e.key === "ArrowLeft") this.dx = -1;
-  if(e.key === "ArrowRight") this.dx = 1;
-});
-window.addEventListener("keyup", () => { this.dx = 0; this.dy = 0; });
+
 
     canvas.addEventListener("touchstart", e => this.handleTouch(e, true));
     canvas.addEventListener("touchend", e => this.handleTouch(e, false));
@@ -642,6 +637,27 @@ window.addEventListener("keyup", () => { this.dx = 0; this.dy = 0; });
     });
     ctx.globalAlpha = 1.0;
   }
+  update(){
+
+  // キーボード入力があるときだけ上書きする
+  if(keys["ArrowUp"]) {
+    this.dy = -1;
+    this.dx = 0;
+  }
+  else if(keys["ArrowDown"]) {
+    this.dy = 1;
+    this.dx = 0;
+  }
+  else if(keys["ArrowLeft"]) {
+    this.dx = -1;
+    this.dy = 0;
+  }
+  else if(keys["ArrowRight"]) {
+    this.dx = 1;
+    this.dy = 0;
+  }
+
+}
 }
 
 
