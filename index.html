@@ -44,21 +44,36 @@ class Game {
     this.state = "title"; 
     this.titleIndex = 0;
     
-const handleInput = (e) => {
-  // マウスの場合は e.clientX、タッチの場合は e.touches[0].clientX を使う
-  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    // マウスとタッチ両方に対応させる関数
+    const handleInput = (e) => {
+      // 画面上のクリック/タッチした場所を取得
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
-  // clientX, clientY を使って判定する処理に回すための擬似イベントオブジェクト
-  const mockE = { touches: [{ clientX, clientY }] };
+      // clientX, clientY を handleTitleTouch などが使いやすい形に整える
+      const mockE = {
+        touches: [{ 
+          clientX: clientX, 
+          clientY: clientY 
+        }]
+      };
 
-  if (this.state === "title") this.handleTitleTouch(mockE);
-  else if (this.state === "status") this.handleStatusTouch(mockE);
-};
+      if (this.state === "title") this.handleTitleTouch(mockE);
+      else if (this.state === "status") this.handleStatusTouch(mockE);
+    };
 
-canvas.addEventListener("touchstart", (e) => { e.preventDefault(); handleInput(e); }, {passive: false});
-canvas.addEventListener("mousedown", handleInput);ut);
-  }
+    // タッチイベント（スマホ用）
+    canvas.addEventListener("touchstart", (e) => { 
+      e.preventDefault(); 
+      handleInput(e); 
+    }, {passive: false});
+
+    // マウスクリックイベント（PC用）を追加！
+    canvas.addEventListener("mousedown", (e) => {
+      handleInput(e);
+    });
+
+
 
   addMonsterToParty(name, level) {
   const data = MONSTER_DB[name];
