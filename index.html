@@ -404,6 +404,46 @@ async loadLDtk(url) {
     ctx.drawImage(img, tile.src[0], tile.src[1], gridSize, gridSize, tile.px[0], tile.px[1], gridSize, gridSize);
   }
 }
+  // ステータスメニューの描画（不足していたメソッド）
+  drawMenu() {
+    const margin = 40;
+    // 背景の半透明黒
+    ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
+    ctx.fillRect(margin, 80, canvas.width - margin * 2, canvas.height - 180);
+
+    ctx.fillStyle = "white";
+    ctx.font = "20px sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillText("入れ替えたいモンスターをタップ", margin + 20, 110);
+
+    for (let i = 0; i < this.game.party.length; i++) {
+      const m = this.game.party[i];
+      const boxY = 130 + i * 85;
+      
+      // モンスター枠
+      ctx.strokeStyle = i === 0 ? "cyan" : "white";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(margin + 10, boxY, canvas.width - margin * 2 - 20, 70);
+      
+      ctx.fillStyle = "white";
+      ctx.fillText(`${m.name} Lv.${m.level}`, margin + 30, boxY + 30);
+      ctx.font = "16px sans-serif";
+      ctx.fillText(`HP: ${m.hp} / ${m.maxHp}`, margin + 30, boxY + 55);
+      
+      if (i === 0) {
+        ctx.fillStyle = "cyan";
+        ctx.fillText("出撃中", canvas.width - margin - 80, boxY + 40);
+      }
+    }
+
+    // もどるボタン
+    ctx.fillStyle = "darkred";
+    ctx.fillRect(canvas.width - 160, canvas.height - 80, 140, 50);
+    ctx.fillStyle = "white";
+    ctx.font = "20px sans-serif";
+    ctx.fillText("とじる", canvas.width - 120, canvas.height - 47);
+  }
+}
 ////////////////////////////////////////////////////
 // プレイヤー
 ///////////////////////////////////////////////////
