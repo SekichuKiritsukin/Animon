@@ -436,7 +436,7 @@ async loadLDtk(url) {
       }
     }
 
-    // もどるボタン
+        // もどるボタン
     ctx.fillStyle = "darkred";
     ctx.fillRect(canvas.width - 160, canvas.height - 80, 140, 50);
     ctx.fillStyle = "white";
@@ -444,10 +444,12 @@ async loadLDtk(url) {
     ctx.fillText("とじる", canvas.width - 120, canvas.height - 47);
   }
 }
+
 ////////////////////////////////////////////////////
 // プレイヤー
-///////////////////////////////////////////////////
+////////////////////////////////////////////////////
 class Player {
+
   constructor() {
     this.gridSize = 16;
     this.x = (10 * 16) + 8; 
