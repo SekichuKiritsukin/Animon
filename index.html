@@ -325,58 +325,37 @@ async loadLDtk(url) {
     ctx.imageSmoothingEnabled = false;
 
     const layers = this.mapData.levels[0].layerInstances;
+  const foregroundLayer = layers.find(l => l.__identifier === "Foreground");
 
-    ctx.save();
-    
-    // --- カメラ追尾（整数座標に吸着） ---
-    ctx.translate(canvas.width / 2, canvas.height / 2);
-    ctx.scale(2, 2); 
-    ctx.translate(-Math.round(this.player.x), -Math.round(this.player.y));
+  // 1. 背景レイヤーを描画（CollisionやGroundなど）
+  layers.slice().reverse().forEach(layer => {
+    if (layer.__identifier === "Foreground") return; // 手前用は飛ばす
+    this.drawLayerTiles(layer);
+  });
 
-    // マップの描画（下層レイヤー）
-    layers.slice().reverse().forEach(layer => {
-      // 💡 修正ポイント：
-      // "Foreground"（手前）という名前のレイヤーは、後で描くのでスキップ
-      if (layer.__type === "IntGrid" || layer.__identifier === "Foreground") return;
-
-      this.drawLayerTiles(layer); // 描画処理を関数に分離しました
+  // 2. 「プレイヤーの裏」にある観葉植物を描画
+  if (foregroundLayer) {
+    const tiles = foregroundLayer.gridTiles.length > 0 ? foregroundLayer.gridTiles : foregroundLayer.autoLayerTiles;
+    tiles.forEach(tile => {
+      // タイルの下端（足元）が、プレイヤーの足元より上なら先に描く
+      if (tile.px[1] + foregroundLayer.__gridSize <= this.player.y + 4) {
+        this.drawTile(tile, foregroundLayer);
+      }
     });
+  }
 
-    // 💡 修正ポイント：プレイヤーと同じ行（Y座標）にある "Foreground" タイルを探して描画
-    const foregroundLayer = layers.find(l => l.__identifier === "Foreground");
-    if (foregroundLayer) {
-      // プレイヤーの足元の行番号を計算
-      const playerGridY = Math.floor(this.player.y / foregroundLayer.__gridSize);
-      
-      const tiles = foregroundLayer.gridTiles.length > 0 ? foregroundLayer.gridTiles : foregroundLayer.autoLayerTiles;
+  // 3. プレイヤーを描画
+  this.player.draw();
 
-      tiles.forEach(tile => {
-        // タイルの行番号を計算
-        const tileGridY = Math.floor(tile.px[1] / foregroundLayer.__gridSize);
-
-        // 💡 魔法の条件：
-        // プレイヤーより「上」にあるタイルだけを、プレイヤーの前に描画
-        if (tileGridY <= playerGridY) {
-          this.drawTile(tile, foregroundLayer); // タイル1枚を描画する関数
-        }
-      });
-    }
-
-    this.player.draw(); // プレイヤーを描画
-
-    // 💡 修正ポイント：プレイヤーより「下」にある "Foreground" タイルを描画
-    if (foregroundLayer) {
-      const playerGridY = Math.floor(this.player.y / foregroundLayer.__gridSize);
-      const tiles = foregroundLayer.gridTiles.length > 0 ? foregroundLayer.gridTiles : foregroundLayer.autoLayerTiles;
-
-      tiles.forEach(tile => {
-        const tileGridY = Math.floor(tile.px[1] / foregroundLayer.__gridSize);
-        // プレイヤーより「下」にあるタイルは、プレイヤーの後に描画
-        if (tileGridY > playerGridY) {
-          this.drawTile(tile, foregroundLayer);
-        }
-      });
-    }
+  // 4. 「プレイヤーの手前」にある観葉植物を描画
+  if (foregroundLayer) {
+    const tiles = foregroundLayer.gridTiles.length > 0 ? foregroundLayer.gridTiles : foregroundLayer.autoLayerTiles;
+    tiles.forEach(tile => {
+      if (tile.px[1] + foregroundLayer.__gridSize > this.player.y + 4) {
+        this.drawTile(tile, foregroundLayer);
+      }
+    });
+  }
 
     ctx.restore(); // カメラリセット
 
@@ -420,15 +399,12 @@ async loadLDtk(url) {
 ///////////////////////////////////////////////////
 class Player {
   constructor() {
-    // 16pxマスのど真ん中（8px）からスタートするように調整
-    // (マス目 * 16) + 8
-    this.x = (10 * 16) + 8; // 例えば左から11番目のマス
-    this.y = (10 * 16) + 8; // 例えば上から11番目のマス
-    
-    this.gridSize = 16; // 1マスのサイズを16に変更
-    this.radius = 6;    // マスが小さくなったので、円も少し小さく（12→6）
-    this.speed = 2;     // 16は2で割り切れるのでOK
-    
+    this.gridSize = 16;
+    this.x = (10 * 16) + 8; 
+    this.y = (10 * 16) + 8;
+    this.radius = 7;     // 見た目の大きさ
+    this.hitbox = 4;     // 💡 判定をさらに小さく（中心から4px分だけ）
+    this.speed = 2;
     this.isMoving = false;
     this.targetX = this.x;
     this.targetY = this.y;
@@ -440,40 +416,42 @@ class Player {
       if (this.x > this.targetX) this.x -= this.speed;
       if (this.y < this.targetY) this.y += this.speed;
       if (this.y > this.targetY) this.y -= this.speed;
-
-      if (this.x === this.targetX && this.y === this.targetY) {
-        this.isMoving = false;
-      }
+      if (this.x === this.targetX && this.y === this.targetY) this.isMoving = false;
       return;
     }
 
     if (stick.dx !== 0 || stick.dy !== 0) {
-      const nextTargetX = this.x + stick.dx * this.gridSize;
-      const nextTargetY = this.y + stick.dy * this.gridSize;
+      const nextX = this.x + stick.dx * this.gridSize;
+      const nextY = this.y + stick.dy * this.gridSize;
 
-      if (this.canMove(nextTargetX, nextTargetY, mapData)) {
-        this.targetX = nextTargetX;
-        this.targetY = nextTargetY;
+      if (this.canMove(nextX, nextY, mapData)) {
+        this.targetX = nextX;
+        this.targetY = nextY;
         this.isMoving = true;
       }
     }
   }
 
+  // 💡 8px単位で壁をチェックする最強のcanMove
   canMove(tx, ty, mapData) {
     if (!mapData) return true;
     const wallLayer = mapData.levels[0].layerInstances.find(l => l.__identifier === "Collision");
     if (!wallLayer) return true;
 
-    // 16px単位でインデックスを計算
-    const gridX = Math.floor(tx / wallLayer.__gridSize);
-    const gridY = Math.floor(ty / wallLayer.__gridSize);
-    
-    if (gridX < 0 || gridX >= wallLayer.__cWid || gridY < 0 || gridY >= wallLayer.__cHei) {
-      return false;
-    }
+    // プレイヤーの四隅（判定サイズ分）をチェック
+    const checkPoints = [
+      { x: tx - this.hitbox, y: ty - this.hitbox },
+      { x: tx + this.hitbox, y: ty - this.hitbox },
+      { x: tx - this.hitbox, y: ty + this.hitbox },
+      { x: tx + this.hitbox, y: ty + this.hitbox }
+    ];
 
-    const cellIndex = gridY * wallLayer.__cWid + gridX;
-    return !(wallLayer.intGridCsv[cellIndex] > 0);
+    return checkPoints.every(p => {
+      const gx = Math.floor(p.x / wallLayer.__gridSize); // LDtkで8pxに設定してれば8で割る
+      const gy = Math.floor(p.y / wallLayer.__gridSize);
+      const idx = gy * wallLayer.__cWid + gx;
+      return !(wallLayer.intGridCsv[idx] > 0);
+    });
   }
 
   draw() {
@@ -481,11 +459,9 @@ class Player {
     ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
     ctx.fillStyle = "lime";
     ctx.fill();
-    // 中心点も小さく
-    ctx.fillStyle = "green";
-    ctx.fillRect(this.x-1, this.y-1, 2, 2);
   }
 }
+
 
 
 
