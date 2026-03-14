@@ -147,13 +147,14 @@ class Game {
     ctx.fillText("もどる", canvas.width - 110, canvas.height - 47);
   }
 
-    handleTitleTouch(e) {
-    const rect = this.canvas.getBoundingClientRect(); // ここを canvas から this.canvas に
+        handleTitleTouch(e) {
+    const rect = canvas.getBoundingClientRect(); // this. を消す
     
     // マウスでもタッチでも座標がズレないように修正
-    const touch = e.touches ? e.touches[0] : e; 
+    const touch = (e.touches && e.touches[0]) ? e.touches[0] : e; 
     const x = touch.clientX - rect.left;
     const y = touch.clientY - rect.top;
+
     
     // ...あとの判定（if文とか）は今のままでOK
 
