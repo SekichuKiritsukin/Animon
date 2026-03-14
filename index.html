@@ -23,7 +23,7 @@ const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-///////////////////////////////////////////////////
+////////////////////////////////////////////////////
 // ゲーム本体（修正版）
 ////////////////////////////////////////////////////
 class Game {
@@ -35,62 +35,51 @@ class Game {
     this.party = [];
     this.activeIndex = 0;
     this.saveSlot = 1;
-    this.deleteMode = false;
+    this.deleteMode = false; // 消去モードフラグ
 
-    // ↓ MONSTER_DBがあるか確認してから追加
-    if (typeof MONSTER_DB !== 'undefined') {
-      this.addMonsterToParty("イヌ", 1);
-    }
+    this.addMonsterToParty("イヌ", 1);
 
     this.field = new FieldSystem(this);
     this.battle = new BattleSystem(this);
     this.state = "title"; 
     this.titleIndex = 0;
     
-    // マウスとタッチ両方に対応させる共通処理
-    const handleInput = (e) => {
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+const handleInput = (e) => {
+  // マウスの場合は e.clientX、タッチの場合は e.touches[0].clientX を使う
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
-      const mockE = {
-        touches: [{ 
-          clientX: clientX, 
-          clientY: clientY 
-        }]
-      };
+  // clientX, clientY を使って判定する処理に回すための擬似イベントオブジェクト
+  const mockE = { touches: [{ clientX, clientY }] };
 
-      if (this.state === "title") this.handleTitleTouch(mockE);
-      else if (this.state === "status") this.handleStatusTouch(mockE);
-    };
+  if (this.state === "title") this.handleTitleTouch(mockE);
+  else if (this.state === "status") this.handleStatusTouch(mockE);
+};
 
-    // スマホ用
-    this.canvas.addEventListener("touchstart", (e) => { 
-      e.preventDefault(); 
-      handleInput(e); 
-    }, {passive: false});
-
-    // PC用
-    this.canvas.addEventListener("mousedown", (e) => {
-      handleInput(e);
-    });
-  } // ← ここ！この閉じカッコが抜けていました
+canvas.addEventListener("touchstart", (e) => { e.preventDefault(); handleInput(e); }, {passive: false});
+canvas.addEventListener("mousedown", handleInput);ut);
+  }
 
   addMonsterToParty(name, level) {
-    const data = MONSTER_DB[name];
-    if (!data) return;
+  const data = MONSTER_DB[name];
+  if (!data) return;
 
-    const newMon = JSON.parse(JSON.stringify(data));
-    newMon.name = name;
-    newMon.level = level;
-    newMon.exp = 0;
-    newMon.nextExp = 20;
-    newMon.maxHp = data.hp + level * 3;
-    newMon.hp = newMon.maxHp;
-    newMon.attack = data.attack + level * 2;
-    newMon.defense = data.defense + level * 2;
-    newMon.speed = data.speed + level;
-    this.party.push(newMon);
-  }
+  const newMon = JSON.parse(JSON.stringify(data));
+
+  newMon.name = name;
+  newMon.level = level;
+  newMon.exp = 0;
+  newMon.nextExp = 20;
+
+  // レベル補正
+  newMon.maxHp = data.hp + level * 3;
+  newMon.hp = newMon.maxHp;
+  newMon.attack = data.attack + level * 2;
+  newMon.defense = data.defense + level * 2;
+  newMon.speed = data.speed + level;
+
+  this.party.push(newMon);
+}
 
   update() {
     if (this.state === "title") return;
@@ -105,20 +94,18 @@ class Game {
     if (this.state === "status") { this.drawStatus(); return; }
   }
 
+  // --- ステータス画面のタッチ判定（ここが抜けていました） ---
   handleStatusTouch(e) {
-    const rect = this.canvas.getBoundingClientRect();
+    const rect = canvas.getBoundingClientRect();
     const x = e.touches[0].clientX - rect.left;
     const y = e.touches[0].clientY - rect.top;
 
-    if (x > this.canvas.width - 140 && x < this.canvas.width - 20 &&
-        y > this.canvas.height - 80 && y < this.canvas.height - 30) {
-      this.state = "field";
+    // 「もどる」ボタンの範囲判定
+    if (x > canvas.width - 140 && x < canvas.width - 20 &&
+        y > canvas.height - 80 && y < canvas.height - 30) {
+      this.state = "field"; // フィールドに戻る
     }
   }
-  
-  // 以降、handleTitleTouch や drawTitle などが続く...
-}
-
 
   drawStatus() {
     ctx.fillStyle = "black";
@@ -147,18 +134,10 @@ class Game {
     ctx.fillText("もどる", canvas.width - 110, canvas.height - 47);
   }
 
-            handleTitleTouch(e) {
-    const rect = canvas.getBoundingClientRect(); // 「this.」を消して「canvas」だけにする
-
-    
-    // マウスでもタッチでも座標がズレないように修正
-    const touch = (e.touches && e.touches[0]) ? e.touches[0] : e; 
-    const x = touch.clientX - rect.left;
-    const y = touch.clientY - rect.top;
-
-    
-    // ...あとの判定（if文とか）は今のままでOK
-
+  handleTitleTouch(e) {
+    const rect = canvas.getBoundingClientRect();
+    const x = e.touches[0].clientX - rect.left;
+    const y = e.touches[0].clientY - rect.top;
 
     // 「データ消去」切り替えボタンの判定
     if (x > canvas.width / 2 - 100 && x < canvas.width / 2 + 100 &&
