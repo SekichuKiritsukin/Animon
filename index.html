@@ -317,7 +317,7 @@ async loadLDtk(url) {
   }
 }
 
-                  draw() {
+                    draw() {
     ctx.fillStyle = "black";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -325,53 +325,63 @@ async loadLDtk(url) {
     ctx.imageSmoothingEnabled = false;
 
     const layers = this.mapData.levels[0].layerInstances;
-  const foregroundLayer = layers.find(l => l.__identifier === "Foreground");
+    const foregroundLayer = layers.find(l => l.__identifier === "Foreground");
 
-  // 1. 背景レイヤーを描画（CollisionやGroundなど）
-  layers.slice().reverse().forEach(layer => {
-    if (layer.__identifier === "Foreground") return; // 手前用は飛ばす
-    this.drawLayerTiles(layer);
-  });
+    // --- ここからカメラ設定（重要！） ---
+    ctx.save(); // これが必要！
+    
+    // 画面中央にプレイヤーが来るように調整
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.scale(2, 2); // 2倍ズーム
+    ctx.translate(-Math.round(this.player.x), -Math.round(this.player.y));
 
-  // 2. 「プレイヤーの裏」にある観葉植物を描画
-  if (foregroundLayer) {
-    const tiles = foregroundLayer.gridTiles.length > 0 ? foregroundLayer.gridTiles : foregroundLayer.autoLayerTiles;
-    tiles.forEach(tile => {
-      // タイルの下端（足元）が、プレイヤーの足元より上なら先に描く
-      if (tile.px[1] + foregroundLayer.__gridSize <= this.player.y + 4) {
-        this.drawTile(tile, foregroundLayer);
-      }
+    // 1. 背景レイヤーを描画（CollisionやGroundなど）
+    layers.slice().reverse().forEach(layer => {
+      if (layer.__identifier === "Foreground" || layer.__type === "IntGrid") return; 
+      this.drawLayerTiles(layer);
     });
-  }
 
-  // 3. プレイヤーを描画
-  this.player.draw();
+    // 2. 「プレイヤーの裏」にある観葉植物を描画
+    if (foregroundLayer) {
+      const tiles = foregroundLayer.gridTiles.length > 0 ? foregroundLayer.gridTiles : foregroundLayer.autoLayerTiles;
+      tiles.forEach(tile => {
+        // タイルの下端（足元）が、プレイヤーの足元より上なら先に描く
+        if (tile.px[1] + foregroundLayer.__gridSize <= this.player.y + 4) {
+          this.drawTile(tile, foregroundLayer);
+        }
+      });
+    }
 
-  // 4. 「プレイヤーの手前」にある観葉植物を描画
-  if (foregroundLayer) {
-    const tiles = foregroundLayer.gridTiles.length > 0 ? foregroundLayer.gridTiles : foregroundLayer.autoLayerTiles;
-    tiles.forEach(tile => {
-      if (tile.px[1] + foregroundLayer.__gridSize > this.player.y + 4) {
-        this.drawTile(tile, foregroundLayer);
-      }
-    });
-  }
+    // 3. プレイヤーを描画
+    this.player.draw();
 
-    ctx.restore(); // カメラリセット
+    // 4. 「プレイヤーの手前」にある観葉植物を描画
+    if (foregroundLayer) {
+      const tiles = foregroundLayer.gridTiles.length > 0 ? foregroundLayer.gridTiles : foregroundLayer.autoLayerTiles;
+      tiles.forEach(tile => {
+        if (tile.px[1] + foregroundLayer.__gridSize > this.player.y + 4) {
+          this.drawTile(tile, foregroundLayer);
+        }
+      });
+    }
 
-    // --- UI描画（ズームなし） ---
+    ctx.restore(); // カメラリセット（これと ctx.save() はセット！）
+
+    // --- UI描画（カメラの影響を受けない） ---
     this.stick.draw();
     
     ctx.fillStyle = "navy";
     ctx.fillRect(canvas.width - 160, 20, 140, 50);
     ctx.fillStyle = "white";
     ctx.font = "20px sans-serif";
+    ctx.textAlign = "left"; // タイトルでcenterにしたのを戻す
     ctx.fillText("ステータス", canvas.width - 145, 52);
 
     if (this.showMenu) {
       this.drawMenu(); 
     }
   }
+
 
   // 💡 助っ人関数：レイヤー全体のタイルを描画
   drawLayerTiles(layer) {
