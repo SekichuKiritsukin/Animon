@@ -420,12 +420,15 @@ async loadLDtk(url) {
 ///////////////////////////////////////////////////
 class Player {
   constructor() {
-    this.gridSize = 16;
-    this.x = (10 * 16) + 8; 
-    this.y = (10 * 16) + 8;
-    this.radius = 7;     // 見た目の大きさ
-    this.hitbox = 4;     // 💡 判定をさらに小さく（中心から4px分だけ）
-    this.speed = 2;
+    // 16pxマスのど真ん中（8px）からスタートするように調整
+    // (マス目 * 16) + 8
+    this.x = (10 * 16) + 8; // 例えば左から11番目のマス
+    this.y = (10 * 16) + 8; // 例えば上から11番目のマス
+    
+    this.gridSize = 16; // 1マスのサイズを16に変更
+    this.radius = 6;    // マスが小さくなったので、円も少し小さく（12→6）
+    this.speed = 2;     // 16は2で割り切れるのでOK
+    
     this.isMoving = false;
     this.targetX = this.x;
     this.targetY = this.y;
@@ -437,42 +440,40 @@ class Player {
       if (this.x > this.targetX) this.x -= this.speed;
       if (this.y < this.targetY) this.y += this.speed;
       if (this.y > this.targetY) this.y -= this.speed;
-      if (this.x === this.targetX && this.y === this.targetY) this.isMoving = false;
+
+      if (this.x === this.targetX && this.y === this.targetY) {
+        this.isMoving = false;
+      }
       return;
     }
 
     if (stick.dx !== 0 || stick.dy !== 0) {
-      const nextX = this.x + stick.dx * this.gridSize;
-      const nextY = this.y + stick.dy * this.gridSize;
+      const nextTargetX = this.x + stick.dx * this.gridSize;
+      const nextTargetY = this.y + stick.dy * this.gridSize;
 
-      if (this.canMove(nextX, nextY, mapData)) {
-        this.targetX = nextX;
-        this.targetY = nextY;
+      if (this.canMove(nextTargetX, nextTargetY, mapData)) {
+        this.targetX = nextTargetX;
+        this.targetY = nextTargetY;
         this.isMoving = true;
       }
     }
   }
 
-  // 💡 8px単位で壁をチェックする最強のcanMove
   canMove(tx, ty, mapData) {
     if (!mapData) return true;
     const wallLayer = mapData.levels[0].layerInstances.find(l => l.__identifier === "Collision");
     if (!wallLayer) return true;
 
-    // プレイヤーの四隅（判定サイズ分）をチェック
-    const checkPoints = [
-      { x: tx - this.hitbox, y: ty - this.hitbox },
-      { x: tx + this.hitbox, y: ty - this.hitbox },
-      { x: tx - this.hitbox, y: ty + this.hitbox },
-      { x: tx + this.hitbox, y: ty + this.hitbox }
-    ];
+    // 16px単位でインデックスを計算
+    const gridX = Math.floor(tx / wallLayer.__gridSize);
+    const gridY = Math.floor(ty / wallLayer.__gridSize);
+    
+    if (gridX < 0 || gridX >= wallLayer.__cWid || gridY < 0 || gridY >= wallLayer.__cHei) {
+      return false;
+    }
 
-    return checkPoints.every(p => {
-      const gx = Math.floor(p.x / wallLayer.__gridSize); // LDtkで8pxに設定してれば8で割る
-      const gy = Math.floor(p.y / wallLayer.__gridSize);
-      const idx = gy * wallLayer.__cWid + gx;
-      return !(wallLayer.intGridCsv[idx] > 0);
-    });
+    const cellIndex = gridY * wallLayer.__cWid + gridX;
+    return !(wallLayer.intGridCsv[cellIndex] > 0);
   }
 
   draw() {
@@ -480,9 +481,11 @@ class Player {
     ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
     ctx.fillStyle = "lime";
     ctx.fill();
+    // 中心点も小さく
+    ctx.fillStyle = "green";
+    ctx.fillRect(this.x-1, this.y-1, 2, 2);
   }
 }
-
 
 
 
