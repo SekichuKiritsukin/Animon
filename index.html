@@ -317,7 +317,7 @@ async loadLDtk(url) {
   }
 }
 
-                    draw() {
+                      draw() {
     ctx.fillStyle = "black";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -327,35 +327,27 @@ async loadLDtk(url) {
     const layers = this.mapData.levels[0].layerInstances;
     const foregroundLayer = layers.find(l => l.__identifier === "Foreground");
 
-    // --- ここからカメラ設定（重要！） ---
-    ctx.save(); // これが必要！
-    
-    // 画面中央にプレイヤーが来るように調整
+    ctx.save();
     ctx.translate(canvas.width / 2, canvas.height / 2);
-    ctx.scale(2, 2); // 2倍ズーム
+    ctx.scale(2, 2);
     ctx.translate(-Math.round(this.player.x), -Math.round(this.player.y));
 
-    // 1. 背景レイヤーを描画（CollisionやGroundなど）
     layers.slice().reverse().forEach(layer => {
       if (layer.__identifier === "Foreground" || layer.__type === "IntGrid") return; 
       this.drawLayerTiles(layer);
     });
 
-    // 2. 「プレイヤーの裏」にある観葉植物を描画
     if (foregroundLayer) {
       const tiles = foregroundLayer.gridTiles.length > 0 ? foregroundLayer.gridTiles : foregroundLayer.autoLayerTiles;
       tiles.forEach(tile => {
-        // タイルの下端（足元）が、プレイヤーの足元より上なら先に描く
         if (tile.px[1] + foregroundLayer.__gridSize <= this.player.y + 4) {
           this.drawTile(tile, foregroundLayer);
         }
       });
     }
 
-    // 3. プレイヤーを描画
     this.player.draw();
 
-    // 4. 「プレイヤーの手前」にある観葉植物を描画
     if (foregroundLayer) {
       const tiles = foregroundLayer.gridTiles.length > 0 ? foregroundLayer.gridTiles : foregroundLayer.autoLayerTiles;
       tiles.forEach(tile => {
@@ -365,85 +357,14 @@ async loadLDtk(url) {
       });
     }
 
-    ctx.restore(); // カメラリセット（これと ctx.save() はセット！）
+    ctx.restore();
 
-    // --- UI描画（カメラの影響を受けない） ---
     this.stick.draw();
     
     ctx.fillStyle = "navy";
     ctx.fillRect(canvas.width - 160, 20, 140, 50);
     ctx.fillStyle = "white";
-    ctx.font = "20px sans-serif";
-    ctx.textAlign = "left"; // タイトルでcenterにしたのを戻す
-    ctx.fillText("ステータス", canvas.width - 145, 52);
-
-    if (this.showMenu) {
-      this.drawMenu(); 
-    }
-  }
-
-
-  // 💡 助っ人関数：レイヤー全体のタイルを描画
-  drawLayerTiles(layer) {
-    const tiles = layer.gridTiles.length > 0 ? layer.gridTiles : layer.autoLayerTiles;
-    tiles.forEach(tile => this.drawTile(tile, layer));
-  }
-
-  // 💡 助っ人関数：タイル1枚を描画
-    // 💡 助っ人関数：タイル1枚を描画
-  drawTile(tile, layer) {
-    let img = this.baseImg;
-    if (layer.__tilesetRelPath) {
-      if (layer.__tilesetRelPath.includes("house")) {
-        img = this.houseImg;
-      } else if (layer.__tilesetRelPath.includes("base")) {
-        img = this.baseImg;
-      }
-    }
-    const gridSize = layer.__gridSize;
-    ctx.drawImage(img, tile.src[0], tile.src[1], gridSize, gridSize, tile.px[0], tile.px[1], gridSize, gridSize);
-  }
-
-  // ステータスメニューの描画
-  drawMenu() {
-    const margin = 40;
-    // 背景の半透明黒
-    ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
-    ctx.fillRect(margin, 80, canvas.width - margin * 2, canvas.height - 180);
-
-    ctx.fillStyle = "white";
-    ctx.font = "20px sans-serif";
-    ctx.textAlign = "left";
-    ctx.fillText("入れ替えたいモンスターをタップ", margin + 20, 110);
-
-    for (let i = 0; i < this.game.party.length; i++) {
-      const m = this.game.party[i];
-      const boxY = 130 + i * 85;
-      
-      // モンスター枠
-      ctx.strokeStyle = i === 0 ? "cyan" : "white";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(margin + 10, boxY, canvas.width - margin * 2 - 20, 70);
-      
-      ctx.fillStyle = "white";
-      ctx.fillText(`${m.name} Lv.${m.level}`, margin + 30, boxY + 30);
-      ctx.font = "16px sans-serif";
-      ctx.fillText(`HP: ${m.hp} / ${m.maxHp}`, margin + 30, boxY + 55);
-      
-      if (i === 0) {
-        ctx.fillStyle = "cyan";
-        ctx.fillText("出撃中", canvas.width - margin - 80, boxY + 40);
-      }
-    }
-
-                // もどるボタン
-    ctx.fillStyle = "darkred";
-    ctx.fillRect(canvas.width - 160, canvas.height - 80, 140, 50);
-    ctx.fillStyle = "white";
-    ctx.font = "20px sans-serif";
-    ctx.fillText("とじる", canvas.width - 120, canvas.height - 47);
-  }
-}
+    ctx.font =
 
 ////////////////////////////////////////////////////
 // プレイヤー
