@@ -43,6 +43,7 @@ class Game {
     this.battle = new BattleSystem(this);
     this.state = "title"; 
     this.titleIndex = 0;
+    
     // マウスとタッチ両方に対応させる関数
     const handleInput = (e) => {
       // 画面上のクリック/タッチした場所を取得
@@ -70,9 +71,9 @@ class Game {
     // マウスクリックイベント（PC用）を追加！
     canvas.addEventListener("mousedown", (e) => {
       handleInput(e);
-    });, {passive: false});
-canvas.addEventListener("mousedown", handleInput);
-  }
+    });
+
+
 
   addMonsterToParty(name, level) {
   const data = MONSTER_DB[name];
