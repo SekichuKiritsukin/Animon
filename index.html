@@ -390,6 +390,7 @@ async loadLDtk(url) {
   }
 
   // 💡 助っ人関数：タイル1枚を描画
+    // 💡 助っ人関数：タイル1枚を描画
   drawTile(tile, layer) {
     let img = this.baseImg;
     if (layer.__tilesetRelPath) {
@@ -400,12 +401,12 @@ async loadLDtk(url) {
       }
     }
     const gridSize = layer.__gridSize;
-    // 重なりを防ぐため +0.5 は一旦削除。もし線が出るなら戻してください。
     ctx.drawImage(img, tile.src[0], tile.src[1], gridSize, gridSize, tile.px[0], tile.px[1], gridSize, gridSize);
   }
-}
-  // ステータスメニューの描画（不足していたメソッド）
+
+  // ステータスメニューの描画
   drawMenu() {
+
     const margin = 40;
     // 背景の半透明黒
     ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
