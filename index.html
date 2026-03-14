@@ -147,10 +147,16 @@ class Game {
     ctx.fillText("もどる", canvas.width - 110, canvas.height - 47);
   }
 
-  handleTitleTouch(e) {
-    const rect = canvas.getBoundingClientRect();
-    const x = e.touches[0].clientX - rect.left;
-    const y = e.touches[0].clientY - rect.top;
+    handleTitleTouch(e) {
+    const rect = this.canvas.getBoundingClientRect(); // ここを canvas から this.canvas に
+    
+    // マウスでもタッチでも座標がズレないように修正
+    const touch = e.touches ? e.touches[0] : e; 
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+    
+    // ...あとの判定（if文とか）は今のままでOK
+
 
     // 「データ消去」切り替えボタンの判定
     if (x > canvas.width / 2 - 100 && x < canvas.width / 2 + 100 &&
