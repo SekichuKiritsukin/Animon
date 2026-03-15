@@ -225,7 +225,7 @@ class FieldSystem{
     this.game=game;
     this.player=new Player();
     this.mapData = null;
-    
+    this.currentLevel = 0;
     // スマホのフォルダ構成に合わせてパスを修正
     this.baseImg = new Image(); 
     this.baseImg.src = "base.png"; // MapChip/ を削除
@@ -317,7 +317,7 @@ async loadLDtk(url) {
 
   this.stick.update();   // ←追加
   this.player.update(this.stick, this.mapData);
-
+this.checkWarp();
   const dx = this.player.x - this.enemy.x;
   const dy = this.player.y - this.enemy.y;
 
@@ -334,7 +334,7 @@ async loadLDtk(url) {
     if (!this.mapData) return;
     ctx.imageSmoothingEnabled = false;
 
-    const layers = this.mapData.levels[0].layerInstances;
+    const layers = this.mapData.levels[this.currentLevel].layerInstances;
 
     ctx.save();
     
@@ -433,6 +433,54 @@ async loadLDtk(url) {
     ctx.font = "20px sans-serif";
     ctx.fillText("メニュー（開発中）", 60, 80);
   }
+ checkWarp(){
+
+  if(!this.mapData) return;
+
+  const entityLayer = this.mapData.levels[this.currentLevel].layerInstances.find(
+    l => l.__identifier === "Entities"
+  );
+
+  if(!entityLayer) return;
+
+  entityLayer.entityInstances.forEach(e=>{
+
+    if(e.__identifier === "Warp"){
+
+      const wx = e.px[0] + 8;
+      const wy = e.px[1] + 8;
+
+      if(
+        Math.abs(this.player.x - wx) < 10 &&
+        Math.abs(this.player.y - wy) < 10
+      ){
+
+        const levelName = e.fieldInstances.find(
+  f=>f.__identifier==="level"
+).__value;
+
+const levelIndex = this.mapData.levels.findIndex(
+  l=>l.identifier === levelName
+);
+
+if(levelIndex !== -1){
+
+  this.currentLevel = levelIndex;
+
+  this.player.x = 160;
+  this.player.y = 160;
+  this.player.targetX = 160;
+  this.player.targetY = 160;
+
+}
+
+      }
+
+    }
+
+  });
+
+}
 } // ← ここで FieldSystem が終わる（重要！）
 
 ////////////////////////////////////////////////////
