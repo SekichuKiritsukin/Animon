@@ -433,53 +433,46 @@ this.checkWarp();
     ctx.font = "20px sans-serif";
     ctx.fillText("メニュー（開発中）", 60, 80);
   }
- checkWarp(){
+ checkWarp() {
+  if (!this.mapData) return;
 
-  if(!this.mapData) return;
-
-  const entityLayer = this.mapData.levels[this.currentLevel].layerInstances.find(
-    l => l.__identifier === "Entities"
+  const warpLayer = this.mapData.levels[this.currentLevel].layerInstances.find(
+    l => l.__identifier === "Warp"
   );
 
-  if(!entityLayer) return;
+  if (!warpLayer) return;
 
-  entityLayer.entityInstances.forEach(e=>{
-
-    if(e.__identifier === "Warp"){
-
+  warpLayer.entityInstances.forEach(e => {
+    if (e.__identifier === "Warp") {
       const wx = e.px[0] + 8;
       const wy = e.px[1] + 8;
 
-      if(
-        Math.abs(this.player.x - wx) < 10 &&
-        Math.abs(this.player.y - wy) < 10
-      ){
+      // 判定範囲を広く
+      if (Math.abs(this.player.x - wx) < 16 &&
+          Math.abs(this.player.y - wy) < 16) {
 
-        const levelName = e.fieldInstances.find(
-  f=>f.__identifier==="level"
-).__value;
+        const toMapField = e.fieldInstances.find(f => f.__identifier === "to_map");
+        const toXField = e.fieldInstances.find(f => f.__identifier === "to_x");
+        const toYField = e.fieldInstances.find(f => f.__identifier === "to_y");
 
-const levelIndex = this.mapData.levels.findIndex(
-  l=>l.identifier === levelName
-);
+        if (!toMapField) return;
 
-if(levelIndex !== -1){
+        const levelName = toMapField.__value;
+        const levelIndex = this.mapData.levels.findIndex(
+          l => l.identifier === levelName
+        );
 
-  this.currentLevel = levelIndex;
-
-  this.player.x = 160;
-  this.player.y = 160;
-  this.player.targetX = 160;
-  this.player.targetY = 160;
-
-}
-
+        if (levelIndex !== -1) {
+          this.currentLevel = levelIndex;
+          this.player.x = toXField ? toXField.__value : 160;
+          this.player.y = toYField ? toYField.__value : 160;
+          this.player.targetX = this.player.x;
+          this.player.targetY = this.player.y;
+          console.log("Warp発動: " + levelName);
+        }
       }
-
     }
-
   });
-
 }
 } // ← ここで FieldSystem が終わる（重要！）
 
