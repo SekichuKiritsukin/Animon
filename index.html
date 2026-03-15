@@ -433,8 +433,7 @@ this.checkWarp();
     ctx.font = "20px sans-serif";
     ctx.fillText("メニュー（開発中）", 60, 80);
   }
- checkWarp(){
-
+  checkWarp(){
   if(!this.mapData) return;
 
   const entityLayer = this.mapData.levels[this.currentLevel].layerInstances.find(
@@ -444,65 +443,45 @@ this.checkWarp();
   if(!entityLayer) return;
 
   entityLayer.entityInstances.forEach(e=>{
-
     if(e.__identifier === "Warp"){
-
+      // エンティティの中心座標を計算
       const wx = e.px[0] + 8;
       const wy = e.px[1] + 8;
 
+      // プレイヤーが重なっているか判定
       if(
-        Math.abs(this.player.x - wx) < 10 &&
-        Math.abs(this.player.y - wy) < 10
+        Math.abs(this.player.x - wx) < 12 && 
+        Math.abs(this.player.y - wy) < 12
       ){
+        // --- フィールド値の取得 ---
+        const levelNameField = e.fieldInstances.find(f => f.__identifier === "to_map");
+        const txField = e.fieldInstances.find(f => f.__identifier === "to_x");
+        const tyField = e.fieldInstances.find(f => f.__identifier === "to_y");
 
-        const levelName = e.fieldInstances.find(
-  f => f.__identifier === "to_map"  // <- LDtkのフィールド名に合わせる
-).__value;
+        if(levelNameField && levelNameField.__value){
+          const levelName = levelNameField.__value;
+          const levelIndex = this.mapData.levels.findIndex(l => l.identifier === levelName);
 
-const targetX = e.fieldInstances.find(
-  f => f.__identifier === "to_x"
-).__value;
+          if(levelIndex !== -1){
+            // 移動先の座標を取得（設定がなければ 160 にする）
+            const targetX = txField ? txField.__value : 160;
+            const targetY = tyField ? tyField.__value : 160;
 
-const targetY = e.fieldInstances.find(
-  f => f.__identifier === "to_y"
-).__value;
-
-if(levelName){
-  const levelIndex = this.mapData.levels.findIndex(
-    l => l.identifier === levelName
-  );
-
-  if(levelIndex !== -1){
-    this.currentLevel = levelIndex;
-    this.player.x = targetX;
-    this.player.y = targetY;
-    this.player.targetX = targetX;
-    this.player.targetY = targetY;
-  }
-}
-
-const levelIndex = this.mapData.levels.findIndex(
-  l=>l.identifier === levelName
-);
-
-if(levelIndex !== -1){
-
-  this.currentLevel = levelIndex;
-
-  this.player.x = 160;
-  this.player.y = 160;
-  this.player.targetX = 160;
-  this.player.targetY = 160;
-
-}
-
+            // マップと座標を切り替え！
+            this.currentLevel = levelIndex;
+            this.player.x = targetX;
+            this.player.y = targetY;
+            this.player.targetX = targetX;
+            this.player.targetY = targetY;
+            
+            console.log("ワープ成功！行き先:", levelName);
+          }
+        }
       }
-
     }
-
   });
-
 }
+
 } // ← ここで FieldSystem が終わる（重要！）
 
 ////////////////////////////////////////////////////
