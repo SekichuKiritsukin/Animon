@@ -433,27 +433,25 @@ this.checkWarp();
     ctx.font = "20px sans-serif";
     ctx.fillText("メニュー（開発中）", 60, 80);
   }
-    checkWarp() {
+      checkWarp() {
     if (!this.mapData) return;
 
-    // ✅ いまいるレベル（currentLevel）からエンティティを探す
-    const entityLayer = this.mapData.levels[this.currentLevel].layerInstances.find(
-      l => l.__identifier === "Entities"
-    );
-
+    const level = this.mapData.levels[this.currentLevel];
+    const entityLayer = level.layerInstances.find(l => l.__identifier === "Entities");
     if (!entityLayer) return;
 
-    entityLayer.entityInstances.forEach(e => {
+    for (let e of entityLayer.entityInstances) {
       if (e.__identifier === "Warp") {
-        // 中心座標を計算
-        const wx = e.px[0] + 8;
-        const wy = e.px[1] + 8;
+        // 💡 修正ポイント：タイルの「真ん中」の座標を計算する
+        const gridSize = e.__grid[0]; // 通常16px
+        const wx = e.px[0] + gridSize / 2;
+        const wy = e.px[1] + gridSize / 2;
 
-        // 💡 判定を「12」から「16」に広げたよ（反応しやすくするため）
-        if (
-          Math.abs(this.player.x - wx) < 16 && 
-          Math.abs(this.player.y - wy) < 16
-        ) {
+        // 💡 判定を「8px」以内に。これで「階段の真上」じゃないと飛ばなくなります
+        const dx = Math.abs(this.player.x - wx);
+        const dy = Math.abs(this.player.y - wy);
+
+        if (dx < 8 && dy < 8) {
           const levelNameField = e.fieldInstances.find(f => f.__identifier === "to_map");
           const txField = e.fieldInstances.find(f => f.__identifier === "to_x");
           const tyField = e.fieldInstances.find(f => f.__identifier === "to_y");
@@ -463,10 +461,10 @@ this.checkWarp();
             const levelIndex = this.mapData.levels.findIndex(l => l.identifier === levelName);
 
             if (levelIndex !== -1) {
-              console.log("ワープ開始！:", levelName);
+              console.log("★ワープ成功！移動先:", levelName);
               
-              // マップとプレイヤー位置を更新
               this.currentLevel = levelIndex;
+              // 座標をセット。値がなければとりあえず160に飛ばす
               const targetX = txField ? txField.__value : 160;
               const targetY = tyField ? tyField.__value : 160;
 
@@ -474,13 +472,15 @@ this.checkWarp();
               this.player.y = targetY;
               this.player.targetX = targetX;
               this.player.targetY = targetY;
-              this.player.isMoving = false; // 移動を強制リセット
+              this.player.isMoving = false;
+              return; // 1回ワープしたら処理を抜ける
             }
           }
         }
       }
-    });
+    }
   }
+
 
 
 } // ← ここで FieldSystem が終わる（重要！）
