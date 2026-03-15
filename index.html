@@ -316,7 +316,7 @@ async loadLDtk(url) {
   update(){
 
   this.stick.update();   // ←追加
-  this.player.update(this.stick, this.mapData);
+  this.player.update(this.stick, this.mapData, this.currentLevel);
 this.checkWarp();
   const dx = this.player.x - this.enemy.x;
   const dy = this.player.y - this.enemy.y;
@@ -433,25 +433,27 @@ this.checkWarp();
     ctx.font = "20px sans-serif";
     ctx.fillText("メニュー（開発中）", 60, 80);
   }
-      checkWarp() {
+    checkWarp() {
     if (!this.mapData) return;
 
-    const level = this.mapData.levels[this.currentLevel];
-    const entityLayer = level.layerInstances.find(l => l.__identifier === "Entities");
+    // ✅ いまいるレベル（currentLevel）からエンティティを探す
+    const entityLayer = this.mapData.levels[this.currentLevel].layerInstances.find(
+     l => l.__identifier === "Warp"
+    );
+
     if (!entityLayer) return;
 
-    for (let e of entityLayer.entityInstances) {
+    entityLayer.entityInstances.forEach(e => {
       if (e.__identifier === "Warp") {
-        // 💡 修正ポイント：タイルの「真ん中」の座標を計算する
-        const gridSize = e.__grid[0]; // 通常16px
-        const wx = e.px[0] + gridSize / 2;
-        const wy = e.px[1] + gridSize / 2;
+        // 中心座標を計算
+        const wx = e.px[0] + 8;
+        const wy = e.px[1] + 8;
 
-        // 💡 判定を「8px」以内に。これで「階段の真上」じゃないと飛ばなくなります
-        const dx = Math.abs(this.player.x - wx);
-        const dy = Math.abs(this.player.y - wy);
-
-        if (dx < 8 && dy < 8) {
+        // 💡 判定を「12」から「16」に広げたよ（反応しやすくするため）
+        if (
+          Math.abs(this.player.x - wx) < 16 && 
+          Math.abs(this.player.y - wy) < 16
+        ) {
           const levelNameField = e.fieldInstances.find(f => f.__identifier === "to_map");
           const txField = e.fieldInstances.find(f => f.__identifier === "to_x");
           const tyField = e.fieldInstances.find(f => f.__identifier === "to_y");
@@ -461,10 +463,10 @@ this.checkWarp();
             const levelIndex = this.mapData.levels.findIndex(l => l.identifier === levelName);
 
             if (levelIndex !== -1) {
-              console.log("★ワープ成功！移動先:", levelName);
+              console.log("ワープ開始！:", levelName);
               
+              // マップとプレイヤー位置を更新
               this.currentLevel = levelIndex;
-              // 座標をセット。値がなければとりあえず160に飛ばす
               const targetX = txField ? txField.__value : 160;
               const targetY = tyField ? tyField.__value : 160;
 
@@ -472,15 +474,13 @@ this.checkWarp();
               this.player.y = targetY;
               this.player.targetX = targetX;
               this.player.targetY = targetY;
-              this.player.isMoving = false;
-              return; // 1回ワープしたら処理を抜ける
+              this.player.isMoving = false; // 移動を強制リセット
             }
           }
         }
       }
-    }
+    });
   }
-
 
 
 } // ← ここで FieldSystem が終わる（重要！）
@@ -505,7 +505,7 @@ class Player {
     this.targetY = this.y;
   }
 
-  update(stick, mapData){
+  update(stick, mapData, currentLevel){
 
 // 移動中
 if(this.isMoving){
@@ -544,7 +544,7 @@ else if(stick.dx === 1){
 
 if(nx !== this.x || ny !== this.y){
 
-  if(this.canMove(nx,ny,mapData)){
+  if(this.canMove(nx,ny,mapData,currentLevel)){
     this.targetX = nx;
     this.targetY = ny;
     this.isMoving = true;
@@ -553,10 +553,10 @@ if(nx !== this.x || ny !== this.y){
 }
 
 }
-  canMove(tx, ty, mapData) {
+  canMove(tx, ty, mapData, currentLevel) {
   if (!mapData) return true;
 
-  const wallLayer = mapData.levels[this.game.field.currentLevel].layerInstances.find(
+  const wallLayer = mapData.levels[currentLevel].layerInstances.find(
     l => l.__identifier === "Collision"
   );
 
