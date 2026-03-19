@@ -437,9 +437,11 @@ this.checkWarp();
     if (!this.mapData) return;
 
     // ✅ いまいるレベル（currentLevel）からエンティティを探す
+        // ✅ "Entities" ではなく "Warp" レイヤーを探すように修正
     const entityLayer = this.mapData.levels[this.currentLevel].layerInstances.find(
-     l => l.__identifier === "Entities"
+     l => l.__identifier === "Warp" || l.__identifier === "Entities"
     );
+
 
     if (!entityLayer) return;
 
